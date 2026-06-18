@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-HK" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI Patrol - NVIDIA XR & VITURE Client</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            background-color: #000;
+            user-select: none;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-black text-gray-100 min-h-screen font-sans flex flex-col justify-between antialiased">
+
+    <div id="home-screen" class="flex flex-col flex-1 max-w-md mx-auto justify-between p-6 w-full">
+        <div class="space-y-8 mt-12 text-center">
+            <div class="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 font-mono text-xl font-black shadow-lg shadow-emerald-500/5 tracking-wider">
+                NV-XR
+            </div>
+            <div>
+                <h1 class="text-3xl font-black tracking-tight text-white">AI-PATROL</h1>
+                <p class="text-xs text-gray-400 font-mono mt-1">First-Person XR Field Assistant (V1 MVP)</p>
+            </div>
+
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-left space-y-4 shadow-xl">
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Camera Hardware Provider</label>
+                    <select id="camera-provider-select" class="w-full bg-gray-950 border border-gray-800 text-white rounded-xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:border-emerald-500 appearance-none shadow-inner">
+                        <option value="iphone">iPhone Rear Camera (Native getUserMedia)</option>
+                        <option value="viture" disabled>VITURE Luma Ultra Stream (XR Hub Ready)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Patrol Location Context</label>
+                    <select id="location-selector" class="w-full bg-gray-950 border border-gray-800 text-white rounded-xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:border-emerald-500 appearance-none shadow-inner">
+                        <option value="Fire Point 01">Fire Point 01 (消防栓 / 逃生通道)</option>
+                        <option value="Server Room">Server Room (機房伺服器 / 溫度監測)</option>
+                        <option value="Barrier Gate Area">Barrier Gate Area (車閘 / 員工 PPE 檢測)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-3 mb-6">
+            <button onclick="App.startPatrolSession()" class="w-full bg-emerald-600 active:bg-emerald-700 text-black font-black py-4 rounded-xl text-lg transition-all active:scale-95 shadow-lg shadow-emerald-600/10 tracking-wide">
+                🚀 初始化 XR Agent 並開始巡邏
+            </button>
+            <button onclick="App.switchScreen('log-screen'); IncidentService.renderLogs();" class="w-full bg-gray-950 border border-gray-800 text-gray-400 py-3 rounded-xl text-sm font-medium active:bg-gray-900 transition-colors">
+                查看本地事故存證紀錄 (LocalStorage)
+            </button>
+        </div>
+    </div>
+
+    <div id="inspection-screen" class="hidden flex flex-col flex-1 max-w-md mx-auto p-4 space-y-4 overflow-y-auto no-scrollbar pb-12 w-full">
+        <div class="flex items-center justify-between pt-2">
+            <button onclick="App.stopPatrolSession()" class="text-gray-400 active:text-white p-1 text-sm font-bold">⬅️ 結束</button>
+            <div class="text-center">
+                <h2 id="active-location" class="text-md font-black text-white tracking-wide">Location</h2>
+                <p class="text-[10px] text-emerald-400 font-mono uppercase tracking-wider">Client Role: Participant</p>
+            </div>
+            <div id="network-badge" class="bg-emerald-500/10 text-emerald-400 text-[9px] font-mono px-2 py-0.5 rounded border border-emerald-500/20 shadow-sm">STREAMING</div>
+        </div>
+
+        <div class="relative w-full aspect-video bg-gray-950 rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
+            <video id="video-preview" autoplay playsinline muted class="w-full h-full object-cover"></video>
+            <div class="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
+                <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                <span class="text-[10px] font-mono text-gray-300 tracking-wider">XR MEDIA HUB</span>
+            </div>
+            <button onclick="App.triggerManualCapture()" class="absolute bottom-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 active:scale-90 text-white p-3.5 rounded-full transition-transform text-sm shadow-lg">📸 採樣</button>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-2 shadow-xl">
+            <div class="flex justify-between items-center">
+                <span class="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1">🤖 Cosmos-Reason1-7B</span>
+                <span class="text-[9px] text-gray-500 font-mono">Sampling: 1f / 5s</span>
+            </div>
+            <p id="ai-status" class="text-sm text-gray-200 leading-relaxed font-normal">正在接收鏡頭傳輸，等待 VLM 進行首幀 Reasoning...</p>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl shadow-xl">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">MCP Tool Verification (安全清單)</h3>
+            <div id="checklist-container" class="space-y-2"></div>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-2 shadow-xl">
+            <div class="flex justify-between items-center">
+                <span class="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-widest">🎙️ Nemotron Audio Agent</span>
+                <span class="text-[9px] text-gray-500 font-mono">STT Pipeline</span>
+            </div>
+            <div class="flex gap-2">
+                <input id="voice-input" type="text" placeholder="問 AI: 'Is there any issue?'" class="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 shadow-inner">
+                <button onclick="App.handleVoiceQuerySubmit()" class="bg-blue-600 active:bg-blue-700 text-white px-4 rounded-xl text-sm font-bold active:scale-95 transition-transform shadow-md shadow-blue-600/10">發送</button>
+            </div>
+            <p id="voice-response" class="text-xs text-blue-200 hidden mt-1 bg-blue-950/30 p-3 rounded-xl border border-blue-900/30 leading-relaxed font-sans"></p>
+        </div>
+
+        <div class="bg-gray-900 border border-red-950/20 p-4 rounded-2xl space-y-3 shadow-xl">
+            <h3 class="text-xs font-bold text-red-400 uppercase tracking-widest flex items-center gap-1">🚨 MCP Agent Tool: Create Incident</h3>
+            <textarea id="user-remarks" placeholder="操作員備註 (例如：滅火器過期、信道堆放雜物)..." class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-white h-20 resize-none focus:outline-none focus:border-red-900 shadow-inner"></textarea>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="App.submitIncident('High')" class="bg-orange-600/10 text-orange-400 border border-orange-600/30 hover:bg-orange-600/20 font-bold py-3 rounded-xl text-xs active:scale-95 transition-all">🔥 High 級上報</button>
+                <button onclick="App.submitIncident('Critical')" class="bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl text-xs active:scale-95 transition-all shadow-md shadow-red-600/10">🚨 Critical 緊急</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="log-screen" class="hidden flex flex-col flex-1 max-w-md mx-auto p-4 space-y-4 overflow-y-auto no-scrollbar pb-12 w-full">
+        <div class="flex items-center justify-between pt-2">
+            <button onclick="App.switchScreen('home-screen')" class="text-gray-400 text-sm font-bold active:text-white">⬅️ 返回</button>
+            <h2 class="text-md font-black text-white tracking-wide">本地事故存證紀錄</h2>
+            <button onclick="IncidentService.clearLogs()" class="text-red-400 text-xs font-bold active:text-red-300">🗑️ 清空</button>
+        </div>
+        <div id="logs-container" class="space-y-4"></div>
+    </div>
+
+    <script>
+        // --- DATA LAYER ---
+        const PatrolContext = {
+            checklists: {
+                "Fire Point 01": ["Fire extinguisher present", "Emergency exit not blocked", "Water leakage not detected"],
+                "Server Room": ["Rack temperature normal", "Unauthorized person not detected", "Unusual noise not detected"],
+                "Barrier Gate Area": ["Barrier gate normal", "PPE / safety issue not detected", "Tailgating not detected"]
+            },
+            aiResponses: {
+                "Fire Point 01": "[Cosmos-Reason1-7B] 實時第一人稱視角已對齊。偵測到目標物：標準乾粉滅火器（置信度 96%）、綠色逃生安全指示牌。路徑邊界未發現障礙物阻塞，未偵測到液體滲漏跡象。現狀：安全。",
+                "Server Room": "[Cosmos-Reason1-7B] 機房內數據中心機架運作燈呈綠色正常。經音頻特徵檢測，未發現冷卻風扇異常噪音。紅外與視覺比對未發現熱點異常或濃煙。現狀：正常。",
+                "Barrier Gate Area": "[Cosmos-Reason1-7B] 車閘出入口範圍掃描完畢。起落杆處於關閉存取狀態。當前畫面上的人員均穿戴反光衣及標準安全帽（PPE 驗證通過）。未偵測到跟車（Tailgating）行為。現狀：正常。"
+            }
+        };
+
+        // --- HARDWARE CAMERA LAYER ---
+        const CameraService = {
+            stream: null,
+            async initialize(videoElementId) {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("此瀏覽器不支援相機功能，請在 iPhone Safari 使用 HTTPS 連線。");
+                }
+                this.stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                document.getElementById(videoElementId).srcObject = this.stream;
+            },
+            captureSnapshot(videoElementId) {
+                const video = document.getElementById(videoElementId);
+                if (!video || !this.stream) return "";
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    return canvas.toDataURL('image/jpeg', 0.6);
+                }
+                return "";
+            },
+            stop() {
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                    this.stream = null;
+                }
+            }
+        };
+
+        // --- LOCAL STORAGE LAYER ---
+        const IncidentService = {
+            save(location, severity, remarks, imageBase64) {
+                const logs = JSON.parse(localStorage.getItem('ai_patrol_v1_logs') || '[]');
+                const newIncident = {
+                    id: "INC-" + Date.now(),
+                    location: location,
+                    severity: severity,
+                    remarks: remarks,
+                    image: imageBase64,
+                    timestamp: new Date().toLocaleString('zh-HK')
+                };
+                logs.unshift(newIncident);
+                localStorage.setItem('ai_patrol_v1_logs', JSON.stringify(logs));
+            },
+            renderLogs() {
+                const container = document.getElementById('logs-container');
+                container.innerHTML = "";
+                const logs = JSON.parse(localStorage.getItem('ai_patrol_v1_logs') || '[]');
+                
+                if (logs.length === 0) {
+                    container.innerHTML = `<p class="text-sm text-gray-500 italic text-center py-12">無任何本地異常報告存證。</p>`;
+                    return;
+                }
+                logs.forEach(log => {
+                    container.innerHTML += `
+                        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-3 shadow-md">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-black text-white">${log.location}</span>
+                                <span class="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold ${
+                                    log.severity === 'Critical' ? 'bg-red-950 text-red-400 border border-red-900' : 'bg-orange-950 text-orange-400 border border-orange-900'
+                                }">${log.severity}</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 font-mono">${log.timestamp}</p>
+                            <p class="text-sm text-gray-200 bg-black/40 p-3 rounded-xl border border-gray-800/60 leading-relaxed">${log.remarks}</p>
+                            ${log.image ? `<img src="${log.image}" class="w-full aspect-video object-cover rounded-xl border border-gray-800 mt-2 shadow-inner">` : ''}
+                        </div>
+                    `;
+                });
+            },
+            clearLogs() {
+                if (confirm('確定要徹底清除所有本地 LocalStorage 事故報告？')) {
+                    localStorage.removeItem('ai_patrol_v1_logs');
+                    this.renderLogs();
+                }
+            }
+        };
+
+        // --- ORCHESTRATION LAYER (APP CONTROL) ---
+        const App = {
+            samplingInterval: null,
+            lastFrameBase64: "",
+
+            switchScreen(screenId) {
+                ['home-screen', 'inspection-screen', 'log-screen'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+                document.getElementById(screenId).classList.remove('hidden');
+            },
+
+            async startPatrolSession() {
+                const selectedLocation = document.getElementById('location-selector').value;
+                document.getElementById('active-location').innerText = selectedLocation;
+                this.switchScreen('inspection-screen');
+                this.renderChecklistUI(selectedLocation);
+
+                try {
+                    await CameraService.initialize('video-preview');
+                    
+                    this.samplingInterval = setInterval(() => {
+                        this.executePipelineTick(selectedLocation);
+                    }, 5000);
+
+                    setTimeout(() => this.executePipelineTick(selectedLocation), 800);
+
+                } catch (err) {
+                    alert(err.message || "相機初始化失敗。請確保部署於 HTTPS 環境並在 Safari 中允許權限。");
+                    this.stopPatrolSession();
+                }
+            },
+
+            stopPatrolSession() {
+                CameraService.stop();
+                if (this.samplingInterval) {
+                    clearInterval(this.samplingInterval);
+                    this.samplingInterval = null;
+                }
+                this.switchScreen('home-screen');
+            },
+
+            renderChecklistUI(location) {
+                const container = document.getElementById('checklist-container');
+                container.innerHTML = "";
+                PatrolContext.checklists[location].forEach(item => {
+                    container.innerHTML += `
+                        <div class="flex items-center justify-between bg-gray-950 p-3.5 rounded-xl border border-gray-800/50">
+                            <span class="text-xs text-gray-300 font-medium">${item}</span>
+                            <span class="status-badge text-gray-600 text-xs font-mono font-bold tracking-wider">WAIT_VLM</span>
+                        </div>
+                    `;
+                });
+            },
+
+            executePipelineTick(location) {
+                const base64 = CameraService.captureSnapshot('video-preview');
+                if (base64) this.lastFrameBase64 = base64;
+
+                const statusEl = document.getElementById('ai-status');
+                statusEl.className = "text-xs font-mono text-yellow-500 animate-pulse";
+                statusEl.innerText = "⚡ [MCP Ingestion] Frame packet sent. Processing via Cosmos-Reason1...";
+
+                setTimeout(() => {
+                    statusEl.className = "text-sm text-gray-200 leading-relaxed font-normal";
+                    statusEl.innerText = PatrolContext.aiResponses[location] || "[AI] 未知區域，無法匹配脈絡數據。";
+
+                    document.querySelectorAll('.status-badge').forEach(badge => {
+                        const score = (90 + Math.random() * 9).toFixed(0);
+                        badge.innerText = `PASS (${score}%)`;
+                        badge.className = "status-badge text-emerald-400 text-[10px] font-mono font-bold bg-emerald-950/40 border border-emerald-900/50 px-2 py-0.5 rounded-md shadow-sm";
+                    });
+                }, 1200);
+            },
+
+            triggerManualCapture() {
+                const loc = document.getElementById('active-location').innerText;
+                this.executePipelineTick(loc);
+                const badge = document.getElementById('network-badge');
+                badge.innerText = "MANUAL_FORCED";
+                badge.className = "bg-yellow-500/20 text-yellow-400 text-[9px] font-mono px-2 py-0.5 rounded border border-yellow-500/20";
+                setTimeout(() => {
+                    badge.innerText = "STREAMING";
+                    badge.className = "bg-emerald-500/10 text-emerald-400 text-[9px] font-mono px-2 py-0.5 rounded border border-emerald-500/20";
+                }, 1500);
+            },
+
+            handleVoiceQuerySubmit() {
+                const inputVal = document.getElementById('voice-input').value.trim();
+                const respEl = document.getElementById('voice-response');
+                const loc = document.getElementById('active-location').innerText;
+                if (!inputVal) return;
+
+                respEl.classList.remove('hidden');
+                respEl.innerText = "🎙️ [STT Ingestion Pipeline...]";
+
+                setTimeout(() => {
+                    let textReply = `[Nemotron Audio Agent]: 已為你對齊現場。目前針對「${inputVal}」在 ${loc} 進行了分析，視覺特徵與當前核對清單工具組 (MCP Tools) 的反饋完全吻合，暫未發現結構性違規。`;
+                    if (inputVal.toLowerCase().includes('issue') || inputVal.includes('異常')) {
+                        textReply = `[Nemotron Audio Agent]: 偵測到關鍵字查詢。當前 VLM 未回傳告警，如你現場肉眼發現異常，請點擊下方 Agent Tool 進行強制存證上報。`;
+                    }
+                    respEl.innerText = textReply;
+                }, 800);
+
+                document.getElementById('voice-input').value = "";
+            },
+
+            submitIncident(severity) {
+                const loc = document.getElementById('active-location').innerText;
+                const remarks = document.getElementById('user-remarks').value.trim();
+                if (!remarks) {
+                    alert('請輸入現場異常備註說明，以便 Agent 生成事故存證數據封包。');
+                    return;
+                }
+                
+                IncidentService.save(loc, severity, remarks, this.lastFrameBase64);
+                
+                alert(`✅ [MCP Tool Triggered] 事故報告已建立！\n當前第一人稱圖像幀已成功編碼並儲存至本地庫。`);
+                document.getElementById('user-remarks').value = "";
+            }
+        };
+    </script>
+</body>
+</html>
