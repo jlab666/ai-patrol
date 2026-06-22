@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AI Patrol - VITURE Advanced UI</title>
+    <title>AI Patrol - VITURE Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { -webkit-tap-highlight-color: transparent; background-color: #000; user-select: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* 🚀 工業級隱藏式全螢幕日誌抽屜動畫 */
+        /* 🚀 抽屜只在第二個畫面起作用 */
         .logger-drawer {
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             transform: translateY(calc(100% - 44px));
@@ -19,21 +19,21 @@
         }
     </style>
 </head>
-<body class="bg-black text-gray-100 min-h-screen font-sans flex flex-col justify-between antialiased overflow-hidden">
+<body class="bg-black text-gray-100 min-h-screen font-sans flex flex-col justify-between antialiased">
 
-    <div id="home-screen" class="flex flex-col flex-1 max-w-md mx-auto justify-between p-6 w-full overflow-y-auto no-scrollbar">
-        <div class="space-y-8 mt-12 text-center">
+    <div id="home-screen" class="flex flex-col flex-1 max-w-md mx-auto justify-between p-6 w-full min-h-screen space-y-8">
+        <div class="space-y-8 mt-6 text-center flex-1">
             <div class="inline-flex p-4 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 font-mono text-xl font-black shadow-lg">
                 NV-XR ENTERPRISE
             </div>
             <div>
                 <h1 class="text-3xl font-black tracking-tight text-white">AI-PATROL PRO</h1>
-                <p class="text-xs text-green-400 font-mono mt-1">v2.2 High-Precision UI/UX Split-View</p>
+                <p class="text-xs text-green-400 font-mono mt-1">v2.3 iPhone Safari Layout Fixed</p>
             </div>
 
             <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-left space-y-4 shadow-xl">
                 <div class="p-3 bg-green-950/40 border border-green-900/50 rounded-xl text-[11px] text-green-400 font-mono leading-relaxed">
-                    ⚙️ Layout Optimized for VITURE:<br>全新智能大螢幕佈局。最底部新增「可拉伸全螢幕 Debug 日誌」，大幅提升流動排錯體驗。
+                    ⚙️ iOS Layout Patch:<br>已解除主頁面高度鎖定，修正 iPhone 網址欄頂死、無法向下滾動點擊開始按鈕的 Bug。
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">請選擇前線巡邏場境 (Context Area)</label>
@@ -46,7 +46,7 @@
             </div>
         </div>
 
-        <div class="mb-12">
+        <div class="pb-12 pt-4">
             <button onclick="App.startPatrolSession()" class="w-full bg-green-600 active:bg-green-700 text-black font-black py-4 rounded-xl text-lg transition-all active:scale-95 shadow-lg tracking-wide">
                 進入 VITURE 視野並開始智能巡檢
             </button>
@@ -61,10 +61,10 @@
                 <h2 id="active-location" class="text-sm font-black text-white tracking-wide">Location</h2>
                 <p class="text-[9px] text-green-400 font-mono uppercase tracking-wider">Edge Inference Active</p>
             </div>
-            <div class="bg-green-500/10 text-green-400 text-[9px] font-mono px-2 py-0.5 rounded border border-green-500/20">VLM_v2.2</div>
+            <div class="bg-green-500/10 text-green-400 text-[9px] font-mono px-2 py-0.5 rounded border border-green-500/20">VLM_v2.3</div>
         </div>
 
-        <div class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 pb-16">
+        <div class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 pb-24">
             
             <div class="relative w-full aspect-video bg-gray-950 rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
                 <video id="video-preview" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -116,12 +116,11 @@
     </div>
 
     <script>
-        // 日誌打印功能
         function logger(msg, type = "info") {
             const consoleEl = document.getElementById('debug-log-console');
             if (!consoleEl) return;
             console.log(`[DEBUG] [${type.toUpperCase()}] ${msg}`);
-            if (consoleEl.innerText.includes("[系統排錯監控端就緒]")) { consoleEl.innerHTML = ""; }
+            if (consoleEl.innerText.includes("[系統排錯监控端就緒]")) { consoleEl.innerHTML = ""; }
 
             let color = "text-gray-400";
             if (type === "success") color = "text-green-400 font-bold";
@@ -130,7 +129,7 @@
 
             const time = new Date().toLocaleTimeString();
             consoleEl.innerHTML += `<p class="${color}">[${time}] [${type.toUpperCase()}] ${msg}</p>`;
-            consoleEl.scrollTop = consoleEl.scrollHeight; // 自動向下捲動
+            consoleEl.scrollTop = consoleEl.scrollHeight;
         }
 
         const CameraService = {
@@ -158,7 +157,7 @@
                     { id: "box", name: "消防栓箱門是否安全緊閉" }
                 ],
                 "Server Room": [
-                    { id: "air", name: "空裝系統及冷風口無冷凝水滴漏" },
+                    { id: "air", name: "空調系統及冷風口無冷凝水滴漏" },
                     { id: "floor", name: "機櫃底部及防靜電地板無滲水跡象" },
                     { id: "rack", name: "伺服器機架指示燈狀態無警告亮起" }
                 ],
@@ -231,7 +230,6 @@
                 netBadge.innerText = "PROCESSING";
                 netBadge.className = "bg-yellow-500/10 text-yellow-400 text-[9px] font-mono px-2 py-0.5 rounded border border-yellow-500/20 animate-pulse";
 
-                // 模擬真實調用 NVIDIA API Catalog 時發射的完整結構，在 Logger 內百分之百打印出來！
                 logger(`🌐 正在模擬發起 POST 請求至: https://integrate.api.nvidia.com/v1/chat/completions`, "info");
                 logger(`🔒 Authorization 頭部已自動帶入內置金鑰: Bearer nvapi-oH-2qHYk0UQ...`, "info");
                 logger(`📦 請求載荷(Payload)模型名稱設定為: "model": "google/paligemma"`, "info");
@@ -240,7 +238,6 @@
                     const pool = this.aiResponsePool[location] || [{ summary: "解析完畢。", failIds: [] }];
                     const luckyResult = pool[Math.floor(Math.random() * pool.length)];
                     
-                    // 打印原汁原味的大模型底層通訊報文
                     logger(`🟢 成功接收來自 NVIDIA 雲端超級電腦的 HTTP 200 回應報文！`, "success");
                     logger(`📥 VLM 大腦真實回傳 JSON 文本：\n{\n  "model": "paligemma-3b",\n  "summary": "${luckyResult.summary}",\n  "failed_indicators": ${JSON.stringify(luckyResult.failIds)}\n}`, "success");
 
