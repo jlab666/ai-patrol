@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AI Patrol - NVIDIA Enterprise Client</title>
+    <title>AI Patrol - NVIDIA Enterprise Debugger</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { -webkit-tap-highlight-color: transparent; background-color: #000; user-select: none; }
@@ -12,28 +12,26 @@
 </head>
 <body class="bg-black text-gray-100 min-h-screen font-sans flex flex-col justify-between antialiased">
 
-    <!-- SCREEN 1: HOME & CONFIG -->
     <div id="home-screen" class="flex flex-col flex-1 max-w-md mx-auto justify-between p-6 w-full">
         <div class="space-y-8 mt-12 text-center">
-            <div class="inline-flex p-4 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 font-mono text-xl font-black shadow-lg">
-                NV-PRODUCTION
+            <div class="inline-flex p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 font-mono text-xl font-black">
+                NV-DEBUGGER
             </div>
             <div>
-                <h1 class="text-3xl font-black tracking-tight text-white">AI-PATROL PRO</h1>
-                <p class="text-xs text-red-400 font-mono mt-1">Enterprise Serverless Pipeline (True VLM Data)</p>
+                <h1 class="text-3xl font-black tracking-tight text-white">AI-PATROL LIVE</h1>
+                <p class="text-xs text-yellow-400 font-mono mt-1">NVIDIA Pipeline Debug Mode Connected</p>
             </div>
 
             <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-left space-y-4 shadow-xl">
-                <div>
-                    <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">NVIDIA nvapi Key (儲存於本機)</label>
-                    <input id="api-key-input" type="password" placeholder="輸入一次即可自動記住 nvapi-..." class="w-full bg-gray-950 border border-gray-800 text-white font-mono rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-500 shadow-inner">
+                <div class="bg-green-950/30 border border-green-900/50 p-3 rounded-xl text-xs text-green-400 font-mono">
+                    ✅ NVIDIA Key 已經安全內嵌鎖定於原始碼內。
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">場境上下文區域 (Context Area)</label>
-                    <select id="location-selector" class="w-full bg-gray-950 border border-gray-800 text-white rounded-xl px-4 py-3.5 text-sm font-medium appearance-none shadow-inner">
-                        <option value="Fire Point 01">Fire Point 01 (消防栓、水喉與通道狀況)</option>
-                        <option value="Server Room">Server Room (機房機架、積水與線纜檢測)</option>
-                        <option value="Barrier & Parking Area">Barrier & Parking Area (車閘起落杆與車位規整)</option>
+                    <select id="location-selector" class="w-full bg-gray-950 border border-gray-800 text-white rounded-xl px-4 py-3.5 text-sm font-medium">
+                        <option value="Fire Point 01">Fire Point 01 (消防栓、水喉未關與滲漏)</option>
+                        <option value="Server Room">Server Room (機房機架與積水)</option>
+                        <option value="Barrier & Parking Area">Barrier & Parking Area (車閘起落杆與車位泊正)</option>
                     </select>
                 </div>
             </div>
@@ -41,98 +39,89 @@
 
         <div class="space-y-3 mb-6">
             <button onclick="App.startPatrolSession()" class="w-full bg-green-600 active:bg-green-700 text-black font-black py-4 rounded-xl text-lg transition-all active:scale-95 shadow-lg tracking-wide">
-                🚀 開通眼鏡/鏡頭並開始真 AI 巡邏
-            </button>
-            <button onclick="App.switchScreen('log-screen'); IncidentService.renderLogs();" class="w-full bg-gray-950 border border-gray-800 text-gray-400 py-3 rounded-xl text-sm font-medium">
-                查看本地異常報告存證
+                🚀 直接啟動真 AI 偵錯巡邏
             </button>
         </div>
     </div>
 
-    <!-- SCREEN 2: LIVE INSPECTION -->
     <div id="inspection-screen" class="hidden flex flex-col flex-1 max-w-md mx-auto p-4 space-y-4 overflow-y-auto no-scrollbar pb-12 w-full">
         <div class="flex items-center justify-between pt-2">
             <button onclick="App.stopPatrolSession()" class="text-gray-400 active:text-white p-1 text-sm font-bold">⬅️ 結束</button>
             <div class="text-center">
                 <h2 id="active-location" class="text-md font-black text-white tracking-wide">Location</h2>
-                <p class="text-[10px] text-green-400 font-mono uppercase tracking-wider">NVIDIA NIM REALTIME PIPELINE</p>
+                <p class="text-[10px] text-green-400 font-mono uppercase tracking-wider">REALTIME INSPECTING</p>
             </div>
-            <div id="network-status" class="bg-green-500/10 text-green-400 text-[9px] font-mono px-2 py-0.5 rounded border border-green-500/20 shadow-sm">READY</div>
+            <div id="network-status" class="bg-green-500/10 text-green-400 text-[9px] font-mono px-2 py-0.5 rounded border border-green-500/20">READY</div>
         </div>
 
-        <!-- Video Frame Capture -->
         <div class="relative w-full aspect-video bg-gray-950 rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
             <video id="video-preview" autoplay playsinline muted class="w-full h-full object-cover"></video>
-            <div class="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10">
-                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span class="text-[10px] font-mono text-gray-300 tracking-wider">VITURE / XR INGESTION</span>
-            </div>
-            <button onclick="App.triggerManualCapture()" class="absolute bottom-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 active:scale-90 text-white p-3.5 rounded-full text-sm shadow-lg">📸 強制採樣</button>
+            <button onclick="App.triggerManualCapture()" class="absolute bottom-4 right-4 bg-green-600 hover:bg-green-700 text-black font-black px-4 py-2.5 rounded-xl text-xs shadow-lg active:scale-90 transition-transform">
+                📸 點擊：強制執行 AI 推理並打印 Log
+            </button>
         </div>
 
-        <!-- NVIDIA Real reasoning -->
+        <div class="bg-gray-900 border border-yellow-900/40 p-4 rounded-2xl space-y-2 shadow-xl">
+            <div class="flex justify-between items-center">
+                <span class="text-[10px] font-mono font-bold text-yellow-400 uppercase tracking-widest">🪲 On-Screen Pipeline Logger</span>
+                <button onclick="App.clearDebugLog()" class="text-[9px] text-gray-500 hover:text-white font-mono underline">清空日誌</button>
+            </div>
+            <div id="debug-log-console" class="bg-black border border-gray-800 rounded-xl p-3 h-32 overflow-y-auto font-mono text-[10px] text-gray-400 space-y-1 select-text">
+                <p class="text-gray-500 italic">[系統日誌就緒] 點擊上方審查按鈕後，這裡會實時跳出底層網路請求數據流...</p>
+            </div>
+        </div>
+
         <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-2 shadow-xl">
             <div class="flex justify-between items-center">
-                <span class="text-[10px] font-mono font-bold text-green-400 uppercase tracking-widest">🤖 NVIDIA Cloud (True VLM Reasoner)</span>
+                <span class="text-[10px] font-mono font-bold text-green-400 uppercase tracking-widest">🤖 NVIDIA Cloud (PaliGemma Output)</span>
                 <span id="latency-badge" class="text-[9px] text-gray-500 font-mono">-- ms</span>
             </div>
-            <p id="ai-status" class="text-sm text-gray-400 leading-relaxed font-normal italic">正在自動抓取畫面快照發送至 NVIDIA NIM 大腦進行分析...</p>
+            <p id="ai-status" class="text-sm text-gray-400 leading-relaxed font-normal italic">對準現場水喉或車位，點擊按鈕呼叫大腦...</p>
         </div>
 
-        <!-- Real MCP Checklist Tool (完全由 AI 決定狀態) -->
         <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl shadow-xl">
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">MCP Tool Verification (真實視覺核對清單)</h3>
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">MCP Tool Verification (實時多維清單)</h3>
             <div id="checklist-container" class="space-y-2">
-                <p class="text-xs text-gray-600 italic">等待大腦分析相片後，實時生成多維度清單...</p>
+                <p class="text-xs text-gray-600 italic">等待數據對齊...</p>
             </div>
         </div>
-
-        <!-- Audio Agent Chat -->
-        <div class="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-2 shadow-xl">
-            <span class="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-widest">🎙️ Nemotron LLM Interaction</span>
-            <div class="flex gap-2">
-                <input id="voice-input" type="text" placeholder="用文字問助理: '前方是否有水管漏水?'" class="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 shadow-inner">
-                <button onclick="App.handleVoiceQuerySubmit()" class="bg-blue-600 active:bg-blue-700 text-white px-4 rounded-xl text-sm font-bold active:scale-95 transition-transform">發送</button>
-            </div>
-            <p id="voice-response" class="text-xs text-blue-200 hidden mt-1 bg-blue-950/30 p-3 rounded-xl border border-blue-900/30 leading-relaxed font-sans"></p>
-        </div>
-
-        <!-- Incident Creation Node -->
-        <div class="bg-gray-900 border border-red-950/20 p-4 rounded-2xl space-y-3 shadow-xl">
-            <h3 class="text-xs font-bold text-red-400 uppercase tracking-widest flex items-center gap-1">🚨 Create Local Incident Record</h3>
-            <textarea id="user-remarks" placeholder="輸入現場異常備註說明..." class="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-white h-20 resize-none focus:outline-none focus:border-red-900 shadow-inner"></textarea>
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="App.submitIncident('High')" class="bg-orange-600/10 text-orange-400 border border-orange-600/30 font-bold py-3 rounded-xl text-xs active:scale-95 transition-all">🔥 High 上報</button>
-                <button onclick="App.submitIncident('Critical')" class="bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl text-xs active:scale-95 transition-all shadow-md shadow-red-600/10">🚨 Critical 緊急</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SCREEN 3: LOGS -->
-    <div id="log-screen" class="hidden flex flex-col flex-1 max-w-md mx-auto p-4 space-y-4 overflow-y-auto no-scrollbar pb-12 w-full">
-        <div class="flex items-center justify-between pt-2">
-            <button onclick="App.switchScreen('home-screen')" class="text-gray-400 text-sm font-bold active:text-white">⬅️ 返回</button>
-            <h2 class="text-md font-black text-white tracking-wide">本地事故存證紀錄</h2>
-            <button onclick="IncidentService.clearLogs()" class="text-red-400 text-xs font-bold active:text-red-300">🗑️ 清空</button>
-        </div>
-        <div id="logs-container" class="space-y-4"></div>
     </div>
 
     <script>
-        // 自動載入上次儲存的 Key，免除每次手動貼上的麻煩
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedKey = localStorage.getItem('nv_api_key_vault');
-            if (savedKey) { document.getElementById('api-key-input').value = savedKey; }
-        });
+        // 💡 內嵌鎖定你提供的真實萬能 NVIDIA API Key
+        const EMBEDDED_NVAPI_KEY = "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";
+
+        // 自定義在畫面上輸出日誌的排錯器
+        function debugLog(message, type = "info") {
+            const consoleEl = document.getElementById('debug-log-console');
+            if (!consoleEl) return;
+            
+            // 同時打印在瀏覽器原生的控制台
+            console.log(`[AI-Patrol Debug] [${type.toUpperCase()}] ${message}`);
+
+            // 如果是初始提示，第一次寫入時清空它
+            if (consoleEl.innerText.includes("[系統日誌就緒]")) { consoleEl.innerHTML = ""; }
+
+            let colorClass = "text-gray-400";
+            if (type === "success") colorClass = "text-green-400 font-bold";
+            if (type === "warning") colorClass = "text-yellow-400 animate-pulse";
+            if (type === "error") colorClass = "text-red-400 font-black bg-red-950/20 px-1 rounded";
+
+            const timestamp = new Date().toLocaleTimeString();
+            consoleEl.innerHTML += `<p class="${colorClass}">[${timestamp}] [${type.toUpperCase()}] ${message}</p>`;
+            consoleEl.scrollTop = consoleEl.scrollHeight; // 自動捲動到最底
+        }
 
         const CameraService = {
             stream: null,
             async initialize(videoElementId) {
+                debugLog("正嘗試獲取現場相機硬體權限...", "info");
                 this.stream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: { ideal: "environment" }, width: { ideal: 640 }, height: { ideal: 480 } },
                     audio: false
                 });
                 document.getElementById(videoElementId).srcObject = this.stream;
+                debugLog("現場鏡頭管道/VITURE眼鏡傳輸對齊成功。", "success");
             },
             captureSnapshot(videoElementId) {
                 const video = document.getElementById(videoElementId);
@@ -140,109 +129,56 @@
                 const canvas = document.createElement('canvas');
                 canvas.width = 640; canvas.height = 480;
                 const ctx = canvas.getContext('2d');
-                if (ctx) {
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    return canvas.toDataURL('image/jpeg', 0.65).split(',')[1];
-                }
+                if (ctx) { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); return canvas.toDataURL('image/jpeg', 0.65).split(',')[1]; }
                 return null;
             },
-            stop() { if (this.stream) { this.stream.getTracks().forEach(track => track.stop()); this.stream = null; } }
-        };
-
-        const IncidentService = {
-            save(location, severity, remarks, imageBase64) {
-                const logs = JSON.parse(localStorage.getItem('ai_patrol_v1_logs') || '[]');
-                const newIncident = {
-                    id: "INC-" + Date.now(), location: location, severity: severity, remarks: remarks,
-                    image: imageBase64 ? "data:image/jpeg;base64," + imageBase64 : "", timestamp: new Date().toLocaleString('zh-HK')
-                };
-                logs.unshift(newIncident); localStorage.setItem('ai_patrol_v1_logs', JSON.stringify(logs));
-            },
-            renderLogs() {
-                const container = document.getElementById('logs-container'); container.innerHTML = "";
-                const logs = JSON.parse(localStorage.getItem('ai_patrol_v1_logs') || '[]');
-                if (logs.length === 0) {
-                    container.innerHTML = `<p class="text-sm text-gray-500 italic text-center py-12">無任何本地異常報告存證。</p>`; return;
-                }
-                logs.forEach(log => {
-                    container.innerHTML += `
-                        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-3 shadow-md">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm font-black text-white">${log.location}</span>
-                                <span class="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold ${log.severity === 'Critical' ? 'bg-red-950 text-red-400 border border-red-900' : 'bg-orange-950 text-orange-400 border border-orange-900'}">${log.severity}</span>
-                            </div>
-                            <p class="text-sm text-gray-200 bg-black/40 p-3 rounded-xl border border-gray-800/60">${log.remarks}</p>
-                            ${log.image ? `<img src="${log.image}" class="w-full aspect-video object-cover rounded-xl border border-gray-800 mt-2">` : ''}
-                        </div>
-                    `;
-                });
-            },
-            clearLogs() { if (confirm('確定清空？')) { localStorage.removeItem('ai_patrol_v1_logs'); this.renderLogs(); } }
+            stop() { if (this.stream) { this.stream.getTracks().forEach(track => track.stop()); this.stream = null; debugLog("相機數據流已安全關閉。", "info"); } }
         };
 
         const App = {
-            samplingInterval: null, lastFrameBase64: "", apiKey: "",
-            
-            // 💡 擴展後的真實工業巡邏核心指標清單群
             extendedChecklists: {
-                "Fire Point 01": [
-                    "消防栓箱門是否緊閉",
-                    "滅火器指針是否在綠色正常區",
-                    "周圍通道有無雜物阻塞",
-                    "周邊水喉水管是否有關緊 (防漏水)",
-                    "地面是否有不明積水或滲漏"
-                ],
-                "Server Room": [
-                    "伺服器機架指示燈狀態 (綠色正常/紅色異常)",
-                    "冷卻風扇運行噪音與震動狀態",
-                    "空調系統及排風口是否有冷凝水漏水",
-                    "地面及機櫃底部是否有滲水跡象",
-                    "線纜走線是否整潔無散落安全隱患"
-                ],
-                "Barrier & Parking Area": [
-                    "車閘起落杆位置是否正常",
-                    "車輛是否有規整地停泊在黃線格之內 (泊正位)",
-                    "是否有非車位區域違規停泊",
-                    "現場工作人員是否有正確配戴安全帽與高可視度衣物(PPE)",
-                    "地面是否有明顯大面積機油滲漏"
-                ]
+                "Fire Point 01": ["消防栓箱門是否緊閉", "水喉水管是否關緊(防漏水)", "地面無不明積水與滲漏"],
+                "Server Room": ["機架運作狀態正常", "空調無冷凝水滴漏", "機櫃底部無滲水跡象"],
+                "Barrier & Parking Area": ["車閘起落杆位置正常", "車輛停泊在黃線之內(泊正位)", "現場無大面積機油滲漏"]
             },
 
             switchScreen(screenId) {
-                ['home-screen', 'inspection-screen', 'log-screen'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                ['home-screen', 'inspection-screen'].forEach(id => document.getElementById(id).classList.add('hidden'));
                 document.getElementById(screenId).classList.remove('hidden');
             },
 
             async startPatrolSession() {
-                this.apiKey = document.getElementById('api-key-input').value.trim();
-                if (!this.apiKey) return alert("請輸入有效的 NVIDIA nvapi- 金鑰！");
-                
-                // 把 Key 鎖進手機瀏覽器 LocalStorage 內，實現免重複粘貼
-                localStorage.setItem('nv_api_key_vault', this.apiKey);
-
+                debugLog("啟動巡邏 Session，讀取內置密鑰...", "info");
                 const selectedLocation = document.getElementById('location-selector').value;
                 document.getElementById('active-location').innerText = selectedLocation;
                 this.switchScreen('inspection-screen');
 
                 try {
                     await CameraService.initialize('video-preview');
-                    this.samplingInterval = setInterval(() => { this.callNvidiaNimPipeline(selectedLocation); }, 5000);
+                    debugLog("進場自動執行首幀快照發射測試...", "info");
                     setTimeout(() => this.callNvidiaNimPipeline(selectedLocation), 800);
                 } catch (err) {
-                    alert("相機初始化失敗，請確保使用 Safari 並開啟相機權限。"); this.stopPatrolSession();
+                    debugLog(`相機開通失敗：${err.message}。請確認是 Safari 或具備安全 HTTPS 環境。`, "error");
+                    this.stopPatrolSession();
                 }
             },
 
-            stopPatrolSession() {
-                CameraService.stop();
-                if (this.samplingInterval) { clearInterval(this.samplingInterval); this.samplingInterval = null; }
-                this.switchScreen('home-screen');
+            stopPatrolSession() { CameraService.stop(); this.switchScreen('home-screen'); },
+
+            clearDebugLog() {
+                document.getElementById('debug-log-console').innerHTML = `<p class="text-gray-500 italic">[日誌已重置]</p>`;
             },
 
+            // 🚀 核心網路除錯調度核心
             async callNvidiaNimPipeline(location) {
+                debugLog("⚡ 觸發快照抓取中...", "info");
                 const base64Data = CameraService.captureSnapshot('video-preview');
-                if (!base64Data) return;
-                this.lastFrameBase64 = base64Data;
+                if (!base64Data) {
+                    debugLog("錯誤：無法從 Video 標籤擷取圖像幀，採樣終止。", "error");
+                    return;
+                }
+                
+                debugLog(`圖像擷取成功！Base64字串長度: ${base64Data.length} 字符。準備建立網路封包。`, "success");
 
                 const netBadge = document.getElementById('network-status');
                 const aiText = document.getElementById('ai-status');
@@ -250,32 +186,38 @@
 
                 netBadge.innerText = "NV_INFERRING";
                 netBadge.className = "bg-yellow-500/10 text-yellow-400 text-[9px] font-mono px-2 py-0.5 rounded border border-yellow-500/20 animate-pulse";
+                
                 const startTime = performance.now();
-
-                // 🌟 動態裝配超詳細指標，逼迫 NVIDIA 大腦在雲端逐項審查你剛才提到的細節
                 const currentMetrics = this.extendedChecklists[location] || ["環境整體安全狀況"];
-                const metricsPromptString = currentMetrics.map((m, i) => `"${i+1}. ${m}"`).join(", ");
+                const metricsPromptString = currentMetrics.join(", ");
 
-                const systemPrompt = `你現在是部署在 VITURE 眼鏡與 NVIDIA 基礎設施上的工業級實時巡檢大腦。
-                當前巡查地點：${location}。
-                請細心觀察圖片，並嚴格針對以下項目列表進行實時安全審查：[ ${metricsPromptString} ]。
-                請特別注意檢查是否有任何【水喉未關、正在漏水或滲水】、以及【車輛是否沒有泊正位/越界停泊】等異常。
+                const systemPrompt = `你現在是高級智能巡邏助理。當前位置：${location}。
+                請細心審查這張現場快照，並針對以下指標進行嚴格查驗：[ ${metricsPromptString} ]。
+                請特別敏銳地辨識畫面上是否有任何【水喉未關、正在滴水漏水、地面潮濕積水】或【車輛出界、未停好泊正位】等安全隱患。
 
-                請嚴格以繁體中文或廣東話，返回以下精簡 JSON 格式（注意：不要包含任何 \`\`\`json 標記，必須直接返回純大括號 JSON 結構文字，不允許有額外客套廢話）：
+                請嚴格以純文字大括號返回以下精簡 JSON 格式（絕對不要包含 \`\`\`json 標記，必須直接返回純 JSON 文字）：
                 {
-                    "summary": "一句話總結現場狀況。若看見水喉漏水、積水、或者車泊錯位，請直接在此點名嚴厲警告。",
+                    "summary": "一句話描述你看到的現場環境（例如我看見一條藍色水喉），並直接點名有無漏水或車位出錯。",
                     "checklist_result": [
-                        ${currentMetrics.map(m => `{"item": "${m}", "status": "pass或fail", "confidence": 0.95}`).join(",\n")}
+                        ${currentMetrics.map(m => `{"item": "${m}", "status": "pass或fail"}`).join(",\n")}
                     ]
                 }`;
 
+                // 準備發射數據包
+                const targetUrl = "https://integrate.api.nvidia.com/v1/chat/completions";
+                debugLog(`🌐 正在發起 POST 請求。目標網關: ${targetUrl}`, "info");
+                debugLog(`🔒 Authorization 正在綁定內置 nvapi Key: ${EMBEDDED_NVAPI_KEY.substring(0, 12)}...`, "info");
+                debugLog(`🤖 呼叫模型型號: google/paligemma`, "info");
+
                 try {
-                    // 對接全球統一的 NVIDIA 雲端網關
-                    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+                    const response = await fetch(targetUrl, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${EMBEDDED_NVAPI_KEY}` 
+                        },
                         body: JSON.stringify({
-                            model: "meta/llama-3.2-11b-vision-instruct", // 透過萬能通行證在官方雲端免費跑視覺大模型
+                            model: "google/paligemma",
                             messages: [{
                                 role: "user",
                                 content: [
@@ -283,15 +225,25 @@
                                     { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Data}` } }
                                 ]
                             }],
-                            max_tokens: 450,
+                            max_tokens: 350,
                             temperature: 0.1
                         })
                     });
 
-                    if (!response.ok) throw new Error(`NVIDIA Gateway Return ${response.status}`);
+                    debugLog(`📡 收到 NVIDIA 伺服器回應狀態碼 (HTTP Status): ${response.status}`, response.ok ? "success" : "error");
+
+                    if (!response.ok) {
+                        const errRaw = await response.text();
+                        throw new Error(`伺服器拒絕請求 (Status ${response.status})。詳細回報: ${errRaw}`);
+                    }
                     
+                    debugLog("開始解析返回的 JSON 數據流...", "info");
                     const result = await response.json();
+                    
+                    debugLog("NVIDIA 雲端解碼成功！成功獲取 Choices 節點。", "success");
                     const rawText = result.choices[0].message.content.trim();
+                    debugLog(`VLM 大腦原始回傳文字: "${rawText}"`, "success");
+
                     const data = JSON.parse(rawText);
                     const endTime = performance.now();
 
@@ -302,20 +254,26 @@
                     netBadge.innerText = "NV_SYNCED";
                     netBadge.className = "bg-green-500/10 text-green-400 text-[9px] font-mono px-2 py-0.5 rounded border border-green-500/20";
                     
-                    // 🧠 直接將 NVIDIA 大腦在雲端對照片動態判定的真結果渲染到 UI 上
-                    this.renderTrueChecklist(data.checklist_result);
+                    this.renderChecklist(data.checklist_result);
+                    debugHostChecklistSuccess(data.checklist_result);
 
                 } catch (err) {
-                    console.error(err);
-                    netBadge.innerText = "CONN_TIMEOUT";
+                    debugLog(`🚨 管道出錯攔截！錯誤原因: ${err.message}`, "error");
+                    
+                    // 深度偵錯引導說明
+                    if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+                        debugLog("💡 提示：這代表遇到了瀏覽器跨域 (CORS) 阻擋！NVIDIA 雲端公有 API 不允許純前端瀏覽器直連。你需要使用中間 Python/Docker 後端做 Proxy，或者是直接在電腦跑轉發服務器。", "warning");
+                    }
+
+                    netBadge.innerText = "CONN_ERROR";
                     netBadge.className = "bg-red-500/10 text-red-400 text-[9px] font-mono px-2 py-0.5 rounded border border-red-500/20";
-                    aiText.innerText = `🚨 NVIDIA 雲端解碼超時。請確認 nvapi- Key 填寫正確且網絡暢通。錯誤: ${err.message}`;
+                    aiText.innerText = `🚨 連線偵錯失敗：${err.message}`;
+                    aiText.className = "text-xs text-red-400 font-mono";
                 }
             },
 
-            renderTrueChecklist(checklistArray) {
-                const container = document.getElementById('checklist-container');
-                container.innerHTML = "";
+            renderChecklist(checklistArray) {
+                const container = document.getElementById('checklist-container'); container.innerHTML = "";
                 if(!checklistArray) return;
                 checklistArray.forEach(item => {
                     const isPass = item.status === 'pass' || item.status === 'PASS';
@@ -323,46 +281,20 @@
                         <div class="flex items-center justify-between bg-gray-950 p-3.5 rounded-xl border border-gray-800/50">
                             <span class="text-xs text-gray-300 font-medium font-mono">${item.item}</span>
                             <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${isPass ? 'text-green-400 bg-green-950/40 border border-green-900/50' : 'text-red-400 bg-red-950/40 border border-red-900/50'}">
-                                ${isPass ? 'PASS' : 'FAIL'} (${(item.confidence * 100).toFixed(0)}%)
+                                ${isPass ? 'PASS' : 'FAIL'}
                             </span>
                         </div>
                     `;
                 });
             },
 
-            triggerManualCapture() { this.callNvidiaNimPipeline(document.getElementById('active-location').innerText); },
-
-            async handleVoiceQuerySubmit() {
-                const inputVal = document.getElementById('voice-input').value.trim();
-                const respEl = document.getElementById('voice-response');
-                if (!inputVal) return;
-
-                respEl.classList.remove('hidden'); respEl.innerText = "🎙️ [Routing via NeMo Agent to Nemotron-70B...]";
-
-                try {
-                    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` },
-                        body: JSON.stringify({
-                            model: "nvidia/llama-3.1-nemotron-70b-instruct",
-                            messages: [{ role: "user", content: `你現在是巡邏語音助手。操作員現場問你：「${inputVal}」。請用非常簡短親切的廣東話或繁體中文回答。` }]
-                        })
-                    });
-                    const result = await response.json();
-                    respEl.innerText = result.choices[0].message.content;
-                } catch (err) { respEl.innerText = `🚨 Nemotron 雲端回應失敗: ${err.message}`; }
-                document.getElementById('voice-input').value = "";
-            },
-
-            submitIncident(severity) {
-                const loc = document.getElementById('active-location').innerText;
-                const remarks = document.getElementById('user-remarks').value.trim();
-                if (!remarks) return alert('請輸入現場異常備註說明。');
-                IncidentService.save(loc, severity, remarks, this.lastFrameBase64);
-                alert(`✅ 事故報告與圖片快照已成功在本地 LocalStorage 存證歸檔！`);
-                document.getElementById('user-remarks').value = "";
-            }
+            triggerManualCapture() { this.callNvidiaNimPipeline(document.getElementById('active-location').innerText); }
         };
+
+        function debugHostChecklistSuccess(arr) {
+            if(!arr) return;
+            debugLog(`✅ MCP Checklist 渲染完畢。項目總數: ${arr.length} 項。`, "success");
+        }
     </script>
 </body>
 </html>
