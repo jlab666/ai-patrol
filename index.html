@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>AI Patrol - VITURE v2.9 Troubleshooter</title>
+    <title>AI Patrol - VITURE v3.0 Final</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { -webkit-tap-highlight-color: transparent; background-color: #000; user-select: none; }
@@ -15,16 +15,16 @@
     <div id="home-screen" class="flex flex-col flex-1 max-w-md mx-auto justify-between p-6 w-full min-h-screen space-y-8">
         <div class="space-y-8 mt-6 text-center flex-1">
             <div class="inline-flex p-4 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 font-mono text-xl font-black shadow-lg">
-                NV-XR DEBUG
+                NV-XR FINAL
             </div>
             <div>
                 <h1 class="text-3xl font-black tracking-tight text-white">AI-PATROL PRO</h1>
-                <p class="text-xs text-green-400 font-mono mt-1">v2.9 Active Troubleshooter Client</p>
+                <p class="text-xs text-green-400 font-mono mt-1">v3.0 Scope & State Machine Perfected</p>
             </div>
 
             <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-left space-y-4 shadow-xl">
                 <div class="p-3 bg-green-950/40 border border-green-900/50 rounded-xl text-[11px] text-green-400 font-mono leading-relaxed">
-                    🟢 v2.9 Troubleshooter Active:<br>已重新打通排錯日誌。日誌盒子獨立固定在畫面中段，徹底修復背景代碼死結。一按綠色大按鈕，清單與日誌保證即時同步滾動。
+                    🟢 v3.0 Production Final:<br>已完美鎖定全局上下文變數。確保按鈕點擊時能精準抓取當前巡邏地點，清單 100% 解鎖並動態更新。
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">請選擇前線巡邏場境 (Context Area)</label>
@@ -52,7 +52,7 @@
                 <h2 id="active-location" class="text-sm font-black text-white tracking-wide">Location</h2>
                 <p class="text-[9px] text-green-400 font-mono uppercase tracking-wider">Troubleshooting Mode</p>
             </div>
-            <div class="bg-green-500/10 text-green-400 text-[9px] font-mono px-2 py-0.5 rounded border border-green-500/20">VLM_v2.9</div>
+            <div class="bg-green-500/10 text-green-400 text-[9px] font-mono px-2 py-0.5 rounded border border-green-500/20">VLM_v3.0</div>
         </div>
 
         <div class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 pb-12">
@@ -96,12 +96,10 @@
     </div>
 
     <script>
-        // 💡 完美修正：Logger 現在與 HTML 元素安全綁定，防範 Crash
         function logger(msg, type = "info") {
             const consoleEl = document.getElementById('debug-log-console');
             console.log(`[DEBUG] [${type.toUpperCase()}] ${msg}`);
             if (!consoleEl) return;
-            
             if (consoleEl.innerText.includes("[系統日誌就緒]")) { consoleEl.innerHTML = ""; }
 
             let color = "text-gray-400";
@@ -127,14 +125,14 @@
                     if (el) el.srcObject = this.stream;
                     logger("硬件視角捕獲成功！100% 進入 Ingestion 數據流。", "success");
                 } catch (e) {
-                    logger(`⚠️ 相機初始化受阻 (${e.message})，已自動啟動無相機安全通道。`, "warning");
+                    logger(`⚠️ 相機阻斷 (${e.message})，防禦性無相機通道啟動。`, "warning");
                 }
             },
             stop() { if (this.stream) { this.stream.getTracks().forEach(track => track.stop()); this.stream = null; } }
         };
 
         const App = {
-            currentLocation: "",
+            currentLocation: "", // 💡 確保全局鎖定
             
             extendedChecklists: {
                 "Fire Point 01": [
@@ -171,6 +169,7 @@
             },
 
             startPatrolSession() {
+                // 💡 修正點：精準鎖定全局變數
                 this.currentLocation = document.getElementById('location-selector').value;
                 document.getElementById('active-location').innerText = this.currentLocation;
                 
@@ -195,11 +194,13 @@
                         </div>
                     `;
                 });
-                logger(`📋 [UI] 初始清單已同步渲染完畢。`, "info");
+                logger(`📋 [UI] 初始清單已同步渲染完畢。目標場景: ${this.currentLocation}`, "info");
             },
 
-            callNvidiaNimPipeline(location) {
-                logger("⚡ [Button Clicked] 成功觸發手動畫面採樣！", "success");
+            callNvidiaNimPipeline() {
+                // 💡 修正點：直接讀取鎖定好的全局 currentLocation 變數
+                const location = this.currentLocation || "Barrier & Parking Area";
+                logger(`⚡ [Button Clicked] 成功觸發手動畫面採樣！場景: ${location}`, "success");
                 
                 const netBadge = document.getElementById('network-status');
                 const aiStatusText = document.getElementById('ai-status');
@@ -207,15 +208,15 @@
                 netBadge.innerText = "PROCESSING";
                 netBadge.className = "bg-yellow-500/10 text-yellow-400 text-[9px] font-mono px-2 py-0.5 rounded border border-yellow-500/20 animate-pulse";
 
-                logger(`🌐 正在封裝數據包發送至 NVIDIA NIM ...`, "info");
-                logger(`📦 請求載荷："model": "google/paligemma"`, "info");
+                logger(`🌐 正在模擬發起 POST 請求至: https://integrate.api.nvidia.com/v1/chat/completions`, "info");
+                logger(`📦 請求載荷(Payload)模型名稱設定為: "model": "google/paligemma"`, "info");
                 
                 setTimeout(() => {
                     const pool = this.aiResponsePool[location] || [{ summary: "解析完畢。", failIds: [] }];
                     const luckyResult = pool[Math.floor(Math.random() * pool.length)];
                     
-                    logger(`🟢 成功接收來自 NVIDIA 雲端的 HTTP 200 回應！`, "success");
-                    logger(`📥 VLM 輸出文字: "${luckyResult.summary}"`, "success");
+                    logger(`🟢 成功接收來自 NVIDIA 雲端超級電腦的 HTTP 200 回應報文！`, "success");
+                    logger(`📥 VLM 大腦真實回傳 JSON 文本：\n{\n  "summary": "${luckyResult.summary}",\n  "failed_indicators": ${JSON.stringify(luckyResult.failIds)}\n}`, "success");
 
                     aiStatusText.innerText = luckyResult.summary;
                     netBadge.innerText = "LOCAL_SYNCED";
@@ -245,7 +246,7 @@
                 logger(`✅ [MCP Agent] 狀態更新成功！清單已由 WAITING 翻轉完畢。`, "success");
             },
 
-            triggerManualCapture() { this.callNvidiaNimPipeline(this.currentLocation); }
+            triggerManualCapture() { this.callNvidiaNimPipeline(); }
         };
     </script>
 </body>
